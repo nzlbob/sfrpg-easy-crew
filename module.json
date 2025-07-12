@@ -1,0 +1,61 @@
+{
+"id": "sfrpg-easy-crew",
+  "title": "Starfinder Easy NPC Crew",
+  "description": "This module make Starfinder RPG Easy NPC Crews",
+
+  "authors": [
+    {
+      "name": "bob",
+      "flags": {}
+    }
+  ],
+  "version": "0.01",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "12",
+    "maximum": "12"
+  },
+    "esmodules": [
+    "modules/sfrpg-easy-crew.js"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    }
+    
+  ],   
+     "flags": {},
+      "banner": "modules/sfrpg-easy-crew/images/system/sfrpg-easy-crew.webp",
+
+
+  "styles": [
+    "styles/sfrpg-easy-crew.css"
+  ],
+  "url": "https://github.com/nzlbob/sfrpg-easy-crew",
+  "manifest": "https://raw.githubusercontent.com/nzlbob/sfrpg-easy-crew/refs/heads/main/module.json",
+  "download": "https://github.com/nzlbob/sfrpg-easy-crew/archive/refs/heads/main.zip",
+  "media": [
+    {
+      "type": "thumbnail",
+      "url": "modules/sfrpg-easy-crew/images/system/sfrpg-easy-crew.webp",
+      "loop": false,
+      "flags": {}
+    },
+    {
+      "type": "setup",
+      "url": "modules/sfrpg-easy-crew/images/system/sfrpg-easy-crew.webp",
+      "loop": false,
+      "flags": {}
+    },
+    {
+      "type": "cover",
+      "url": "https://raw.githubusercontent.com/nzlbob/sfrpg-galactic-trade/main/images/galactic-trade.webp",
+      "caption": "sfrpg-easy-crew",
+      "loop": false,
+      "flags": {}
+    }
+  ]
+}
