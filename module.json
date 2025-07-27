@@ -9,11 +9,11 @@
       "flags": {}
     }
   ],
-  "version": "0.01",
+  "version": "0.02",
   "compatibility": {
     "minimum": "10",
-    "verified": "12",
-    "maximum": "12"
+    "verified": "13",
+    "maximum": "13"
   },
     "esmodules": [
     "modules/sfrpg-easy-crew.js"

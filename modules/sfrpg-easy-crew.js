@@ -86,7 +86,15 @@ const captainEnvoy = game.settings.get("sfrpg-easy-crew", "captainEnvoy")
   const operativeSkillModifier = pilotOperative ? 2 : 0 // NPC Bonus for skillful and NPC Operatives Adjustments:  +1 to all skill checks
   const envoySkillModifier = captainEnvoy ? 1 : 0   // NPC Bonus for skillful Envoy
 
-  const npcArray = [
+/*
+Alternate gunner formulas = 
+Tier < 10 Gunner = round(crewAPL * 1.25 -3.5)
+Tier >= 10 Gunner = round(crewAPL * 1.45 )
+https://paizo.com/starfinder/faq
+*/
+const gunnerSkill = crewAPL < 10?  Math.round(crewAPL * 1.25 - 3.5) : Math.round(crewAPL * 1.45) // This is the gunner modifier for NPCs, it is based on the crewAPL and is used to calculate the gunner skill bonus.
+
+const npcArray = [
     { tier: 0, minor: 0, major: 0, gunner: 0 },
     { tier: 1, minor: 5, major: 10, gunner: 5 },
     { tier: 2, minor: 7, major: 12, gunner: 6 },
