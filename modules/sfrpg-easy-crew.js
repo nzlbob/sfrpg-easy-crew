@@ -28,16 +28,54 @@ Hooks.on("renderActorSheet", (app, html, data) => {
   const type = app.actor.isToken ? "token" : "actor"
   const id = app.actor.isToken ? app.token.id : app.actor.id
 
-  if ((app.actor.type === "starship") && app.actor.system.crew.useNPCCrew) {
+  if ((app.actor.type === "starship")) {
     const middleColumn = html.find(".crew-settings.flexrow");
     const button = '<div class="NPCSETSKILL" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Set NPC Skills</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
-
-    const thing = middleColumn.find(".settings.flexrow").append(button);
+    const buttonRepair = '<div class="repairship" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Repair Ship</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
+    if (app.actor.system.crew.useNPCCrew) middleColumn.find(".settings.flexrow").append(button);
+    middleColumn.find(".settings.flexrow").append(buttonRepair);
     html.find(".NPCSETSKILL").click(onSetNPCSkills.bind(html));
-
+    html.find(".repairship").click(onRepairShip.bind(html));
   }
 
 })
+
+function onRepairShip(event) {
+  event.preventDefault(); // Prevent the default form submission behavior
+  const element = event.currentTarget;
+  const id = element.dataset.id;
+  const type = element.dataset.type;
+  const actor = type === "token" ? canvas.tokens.get(id).actor : game.actors.get(id);
+  console.log("Repair Ship Clicked", actor, id, type);
+  // Call the repair ship function here
+const newQuadrants = foundry.utils.duplicate(actor.system.quadrants)
+ 
+ const leftoverShield = actor.system.attributes.shields.max - evenShield * 4
+
+ for (let [a,b] of Object.entries(newQuadrants)) {
+     console.log(a,b)
+
+    b.shields.value = evenShield
+    if (a == "forward") {
+      b.shields.value += leftoverShield // Add any leftover shields to the fore quadrant
+    }
+  }
+actor.update({"system.attributes.hp.value": actor.system.attributes.hp.max})
+//actor.sheet.close() // Close the sheet before updating
+actor.update({"system.quadrants": newQuadrants}).then(() => {
+ // actor.update(hpToMax).then(() => {
+  actor.sheet.render(false); // Re-render the sheet to show the updated values 
+  ui.notifications.info("Ship Repaired to Full HP", { permanent: true, localize: true });
+    // console.log("Ship Repaired")
+    // actor.sheet.render(true)
+  }).catch(err => {
+    console.error("Error repairing ship:", err);
+    ui.notifications.error("Failed to repair ship.");
+  });
+
+
+
+}
 
 function onSetNPCSkills(event) {
   event.preventDefault(); // Prevent the default form submission behavior
