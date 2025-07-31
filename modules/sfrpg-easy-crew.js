@@ -30,10 +30,12 @@ Hooks.on("renderActorSheet", (app, html, data) => {
 
   if ((app.actor.type === "starship")) {
     const middleColumn = html.find(".crew-settings.flexrow");
+    const shipAttributes = html.first(".flexcol.traits");
     const button = '<div class="NPCSETSKILL" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Set NPC Skills</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     const buttonRepair = '<div class="repairship" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Repair Ship</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     if (app.actor.system.crew.useNPCCrew) middleColumn.find(".settings.flexrow").append(button);
     middleColumn.find(".settings.flexrow").append(buttonRepair);
+    shipAttributes.find(".flexcol.traits").eq(0).find(".flexrow").find(".flexcol").find("div").append(buttonRepair);
     html.find(".NPCSETSKILL").click(onSetNPCSkills.bind(html));
     html.find(".repairship").click(onRepairShip.bind(html));
   }
@@ -49,18 +51,27 @@ function onRepairShip(event) {
   console.log("Repair Ship Clicked", actor, id, type);
   // Call the repair ship function here
 const newQuadrants = foundry.utils.duplicate(actor.system.quadrants)
- 
+const newSystems = foundry.utils.duplicate(actor.system.attributes.systems)
+ const evenShield = Math.floor(actor.system.attributes.shields.max / 4) // Calculate the even shield value for each quadrant
  const leftoverShield = actor.system.attributes.shields.max - evenShield * 4
 
  for (let [a,b] of Object.entries(newQuadrants)) {
-     console.log(a,b)
+  //   console.log(a,b)
 
     b.shields.value = evenShield
     if (a == "forward") {
       b.shields.value += leftoverShield // Add any leftover shields to the fore quadrant
     }
   }
+
+  for (let [name,system] of Object.entries(newSystems)) {
+    system.value = 'nominal'
+
+  }
 actor.update({"system.attributes.hp.value": actor.system.attributes.hp.max})
+actor.update({"system.attributes.systems": newSystems}) // Update the systems to nominal status
+console.log("New Quadrants", newQuadrants, "New Systems", newSystems)
+
 //actor.sheet.close() // Close the sheet before updating
 actor.update({"system.quadrants": newQuadrants}).then(() => {
  // actor.update(hpToMax).then(() => {
