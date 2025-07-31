@@ -34,7 +34,7 @@ Hooks.on("renderActorSheet", (app, html, data) => {
     const button = '<div class="NPCSETSKILL" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Set NPC Skills</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     const buttonRepair = '<div class="repairship" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Repair Ship</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     if (app.actor.system.crew.useNPCCrew) middleColumn.find(".settings.flexrow").append(button);
-    middleColumn.find(".settings.flexrow").append(buttonRepair);
+   // middleColumn.find(".settings.flexrow").append(buttonRepair);
     shipAttributes.find(".flexcol.traits").eq(0).find(".flexrow").find(".flexcol").find("div").append(buttonRepair);
     html.find(".NPCSETSKILL").click(onSetNPCSkills.bind(html));
     html.find(".repairship").click(onRepairShip.bind(html));
