@@ -1,7 +1,7 @@
 {
 "id": "sfrpg-easy-crew",
   "title": "Starfinder Easy NPC Crew",
-  "description": "This module make Starfinder RPG Easy NPC Crews",
+  "description": "This module sets NPC Crews skills appropriate to the ship tier. Adds a button to the ship sheet to roll the crew's skills. Additional Button to fully repair the ship.",
 
   "authors": [
     {
@@ -9,7 +9,7 @@
       "flags": {}
     }
   ],
-  "version": "0.11",
+  "version": "0.12",
   "compatibility": {
     "minimum": "10",
     "verified": "13",
