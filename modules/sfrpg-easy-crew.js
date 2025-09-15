@@ -50,12 +50,54 @@ Hooks.on("renderActorSheet", (app, html, data) => {
     skillList.append(HPButton);
     const attButton = '<div class="sms-setattacks" data-tooltip="SEC - Set the Attacks for this NPC" data-id = "' + actor.id + '" data-token = "' + actor.isToken + '" data-tokenid = "' + tokenid + '"> <button type="button"> Set NPC Weapons</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     skillList.append(attButton);
+    const imgButton = '<div class="sms-copyImage" data-tooltip="SEC - Copy Image for this NPC" data-id = "' + actor.id + '" data-token = "' + actor.isToken + '" data-tokenid = "' + tokenid + '"> <button type="button"> Copy NPC Image</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
+    skillList.append(imgButton);
     html.find(".sms-setmaxhp").click(setNPC.bind(html));
     html.find(".sms-setattacks").click(setAttacks.bind(html));
-
+    html.find(".sms-copyImage").click(copyImage.bind(html));
 
   }
 })
+
+async function copyImage(event) {
+  console.log("Copy NPC Image clicked");
+  var actor
+  const button = $(event.currentTarget);
+  const actorId = button.data("id");
+  const isToken = button.data("token");
+  const tokenId = button.data("tokenid");
+  console.log("Actor ID:", actorId, "Is Token:", isToken, "Token ID:", tokenId);
+  if (isToken) {
+    const token = await canvas.tokens.get(tokenId);
+    if (token) {
+
+
+      console.log("Token found:", token);      actor = token.actor;
+    } else {
+      console.error("Token not found with ID:", tokenId);
+      return;
+    }
+  } else {
+    actor = await game.actors.get(actorId);
+    if (!actor) {
+      console.error("Actor not found with ID:", actorId);
+      return;
+    }
+  }
+  console.log("Actor:", actor);
+  const image = actor.img.includes("icons/default/") ? findNewActorPicture(actor) : actor.img;
+
+  const reply = await actor.updateSource({ "prototypeToken.texture.src": image });
+  console.log("Updated Actor Image:", reply);
+
+}
+
+async function findNewActorPicture(actor) {
+console.log("Find New Actor Picture:", actor.name, actor.img);
+  return actor.img
+}
+
+
 async function setAttacks(event) {
   // console.log("Set NPC Attacks clicked");
 
@@ -295,22 +337,44 @@ function findNewPicture(item) {
   // Implement your logic to find a new picture for the item
   // This is just a placeholder implementation
   let key = null
+  const weaponType = item.system.weaponType;
   const keywords = item.name.toLowerCase().split(" ");
   keywords.some(keyword => {
     // Implement your logic to find a new picture based on keywords
+    if (keyword.endsWith(",")) {
+      keyword = keyword.slice(0, -1);
+    }
     if (keyword.endsWith("s")) {
       keyword = keyword.slice(0, -1);
     }
-    if (SEC.attackImages[keyword]) {
-      console.log("Keyword:", keyword);
+
+    // console.log("Keyword Check:", keyword, SEC.attackImages[weaponType][keyword]);
+    if (SEC.attackImages[weaponType][keyword]) {
       key = keyword
       return true
     }
   });
-  if (key) return SEC.attackImages[key][Math.floor(Math.random() * SEC.attackImages[key].length)];
-  const newPicture = "systems/sfrpg/icons/default/bolter-gun.svg";
+  // console.log("Find New Picture:", item.name, weaponType, key, item,SEC.attackImages[weaponType][key]);
+  if (key) return SEC.attackImages[weaponType][key][Math.floor(Math.random() * SEC.attackImages[weaponType][key].length)];
+  const newPicture = SEC.attackImages[weaponType].default[Math.floor(Math.random() * SEC.attackImages[weaponType].default.length)];
   return newPicture;
+  /*
+      "basicM": "SFRPG.WeaponTypesBasicMelee",
+      "advancedM": "SFRPG.WeaponTypesAdvMelee",
+      "smallA": "SFRPG.WeaponTypesSmallArms",
+      "longA": "SFRPG.WeaponTypesLongArms",
+      "heavy": "SFRPG.WeaponTypesHeavy",
+      "sniper": "SFRPG.WeaponTypesSniper",
+      "grenade": "SFRPG.WeaponTypesGrenades",
+      "special": "SFRPG.WeaponTypesSpecial",
+      "solarian": "SFRPG.WeaponTypesSolarian"
+  */
+
 }
+
+
+
+
 
 async function checkCompendium(actor, item, weaponArray) {
   let exact = null;
@@ -467,13 +531,13 @@ async function setNPCAbilities(actor) {
   // Sort by name (ascending), then age (ascending), then score (descending)
   skills.sort((a, b) => {
 
-      if (a.value.enabled && !b.value.enabled) {
+    if (a.value.enabled && !b.value.enabled) {
       return -1; // a comes first
     }
     if (!a.value.enabled && b.value.enabled) {
       return 1; // b comes first
     }
-        if (a.value.mod !== b.value.mod) {
+    if (a.value.mod !== b.value.mod) {
       return b.value.mod - a.value.mod; // Sort by mod descending
     }
     if (actor.system.abilities[a.value.ability].mod !== actor.system.abilities[b.value.ability].mod) {
@@ -487,13 +551,13 @@ async function setNPCAbilities(actor) {
     newSkills[skill.key].mod = 0
     if (index < skillmaster.num) {
       newSkills[skill.key].mod = skillmaster.mod
-          newSkills[skill.key].tooltip[0] = 'Skill Ranks: +' + newSkills[skill.key].mod
+      newSkills[skill.key].tooltip[0] = 'Skill Ranks: +' + newSkills[skill.key].mod
     } else if (index < (skillmaster.num + skillgood.num)) {
       newSkills[skill.key].mod = skillgood.mod
-          newSkills[skill.key].tooltip[0] = 'Skill Ranks: +' + newSkills[skill.key].mod
+      newSkills[skill.key].tooltip[0] = 'Skill Ranks: +' + newSkills[skill.key].mod
     } else {
       newSkills[skill.key].mod = actor.system.abilities[skill.value.ability].mod
-          newSkills[skill.key].tooltip[0] = 'Skill Ranks: + 0'
+      newSkills[skill.key].tooltip[0] = 'Skill Ranks: + 0'
     }
     newSkills[skill.key].ranks = newSkills[skill.key].mod
 

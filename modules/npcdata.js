@@ -296,19 +296,119 @@ SEC.NPCMainStats = {
     }
 }
 SEC.attackImages = {
-    "bite": ["icons/creatures/abilities/mouth-teeth-sharp.webp",
-        "icons/creatures/abilities/mouth-teeth-lamprey-red.webp",
-        "icons/creatures/abilities/mouth-teeth-long-red.webp",
-        "icons/creatures/abilities/mouth-teeth-rows-red.webp"
-    ],
-    "claw": ["icons/creatures/claws/claw-curved-jagged-gray.webp",
-        "icons/creatures/claws/claw-curved-jagged-yellow.webp",
-        "icons/creatures/claws/claw-curved-poison-purple.webp",
-        "icons/creatures/claws/claw-hooked-curved.webp"
-    ],
-    "antler": ["icons/creatures/mammals/deer-antlers-blue.webp",
-        "icons/creatures/mammals/deer-antlers-glowing-blue.webp",
-        "icons/creatures/mammals/deer-antlers-green.webp",
-        "icons/creatures/mammals/ox-bull-horned-glowing-orange.webp"
-    ]
+    "basicM": {
+        "default": ["systems/sfrpg/icons/default/bolter-gun.svg"],
+        "bite": ["icons/creatures/abilities/mouth-teeth-sharp.webp",
+            "icons/creatures/abilities/mouth-teeth-lamprey-red.webp",
+            "icons/creatures/abilities/mouth-teeth-long-red.webp",
+            "icons/creatures/abilities/mouth-teeth-rows-red.webp"
+        ],
+        "claw": ["icons/creatures/claws/claw-curved-jagged-gray.webp",
+            "icons/creatures/claws/claw-curved-jagged-yellow.webp",
+            "icons/creatures/claws/claw-curved-poison-purple.webp",
+            "icons/creatures/claws/claw-hooked-curved.webp"
+        ],
+        "antler": ["icons/creatures/mammals/deer-antlers-blue.webp",
+            "icons/creatures/mammals/deer-antlers-glowing-blue.webp",
+            "icons/creatures/mammals/deer-antlers-green.webp",
+            "icons/creatures/mammals/ox-bull-horned-glowing-orange.webp"
+        ],
+        "tail": ["icons/creatures/abilities/tail-swipe-green.webp",
+        ],
+        "sting": ["icons/creatures/abilities/stinger-poison-scorpion-brown.webp",
+        ],
+        "hoof": ["icons/creatures/mammals/deer-movement-leap-green.webp",
+        ],
+        "tentacle": ["icons/creatures/tentacles/tentacles-thing-green.webp",
+            "icons/creatures/tentacles/tentacle-earth-green.webp",
+            "icons/creatures/tentacles/tentacles-octopus-black-pink.webp",
+            "icons/creatures/tentacles/tentacles-suctioncups-pink.webp"
+
+        ],
+        "wing": ["icons/creatures/abilities/wing-batlike-red-pink.webp",
+            "icons/creatures/abilities/wing-batlike-white-blue.webp",
+            "icons/creatures/abilities/wing-batlike-purple-blue.webp"
+        ],
+        "horn": ["icons/creatures/abilities/bull-head-horns-glowing.webp",
+            "icons/creatures/mammals/beast-horned-scaled-glowing-orange.webp",
+            "icons/creatures/unholy/demon-fanged-horned-yellow.webp"
+        ],
+        "slam": ["icons/creatures/abilities/paw-print-tan.webp",
+            "icons/creatures/claws/claw-bear-paw-swipe-brown.webp",
+            "icons/commodities/bones/bone-simple-white-brown.webp"
+
+        ],
+        "spit": ["icons/creatures/slimes/slime-movment-dripping-green.webp",
+            "icons/creatures/slimes/slime-movement-pseudopods-blue.webp"
+
+        ]
+    },
+    "advancedM": {
+        "default": ["systems/sfrpg/icons/equipment/weapons/cryopike.webp"],
+        "boomknuckle": ["systems/sfrpg/icons/equipment/magic%20items/reckless-gloves.webp"],
+        "doshko": ["systems/sfrpg/icons/equipment/weapons/doshko.webp"]
+    },
+    "smallA": {
+        "default": ["systems/sfrpg/icons/equipment/weapons/plasma-pistol-red-star.webp"],
+        "pistol": ["systems/sfrpg/icons/equipment/weapons/laser-pistol-aphelion.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-pistol-azimuth.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-pistol-corona.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-pistol-perihelion.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-pistol-zenith.webp"],
+        "smg": ["systems/sfrpg/icons/equipment/weapons/arc_rifle_static.webp"],
+        
+        "needler": ["systems/sfrpg/icons/equipment/weapons/needler-pistol-advanced.webp",
+            "systems/sfrpg/icons/equipment/weapons/needler-pistol-elite.webp",
+            "systems/sfrpg/icons/equipment/weapons/needler-pistol-paragon.webp",
+            "systems/sfrpg/icons/equipment/weapons/needler-pistol-supreme.webp",
+            "systems/sfrpg/icons/equipment/weapons/needler-pistol-tactical.webp"]
+    },
+    "longA": {
+        "default": ["systems/sfrpg/icons/equipment/weapons/plasma-claw-electocellular.webp"],
+        "rifle": ["systems/sfrpg/icons/equipment/weapons/gamma-rifle-fusion.webp",
+            "systems/sfrpg/icons/equipment/weapons/gamma-rifle-ionizing.webp",
+            "ssystems/sfrpg/icons/equipment/weapons/gamma-rifle-synchrotron.webp",
+            "systems/sfrpg/icons/equipment/weapons/gamma-rifle-terrestrial.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-aphelion.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-azimuth.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-corona.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-perihelion.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-zenith.webp"],
+        "laser": ["systems/sfrpg/icons/equipment/weapons/laser-rifle-aphelion.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-azimuth.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-corona.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-perihelion.webp",
+            "systems/sfrpg/icons/equipment/weapons/laser-rifle-zenith.webp"],
+        "needler": ["systems/sfrpg/icons/equipment/weapons/needler-rifle.webp"],
+        "scattergun": ["systems/sfrpg/icons/equipment/weapons/scattergun-snub.webp",
+            "systems/sfrpg/icons/equipment/weapons/scattergun-vortex.webp",
+            "systems/sfrpg/icons/equipment/weapons/scattergun-grapeshot.webp"
+        ],
+    },
+    "heavy": {
+        "default": ["systems/sfrpg/icons/equipment/weapons/artillery-laser-aphelion.webp"]
+    },
+    "sniper": {
+        "default": ["systems/sfrpg/icons/equipment/weapons/shirren-eye-rifle-advanced.webp"]
+    },
+    "grenade": {
+        "default": ["icons/weapons/thrown/grenade-round.webp"]
+    },
+    "special": {
+        "default": ["icons/weapons/thrown/shuriken-double-red.webp"]
+    },
+    "solarian": {
+        "default": ["icons/commodities/gems/gem-rough-cushion-orange-red.webp"]
+    }
 };
+/*
+    "basicM": "SFRPG.WeaponTypesBasicMelee",
+    "advancedM": "SFRPG.WeaponTypesAdvMelee",
+    "smallA": "SFRPG.WeaponTypesSmallArms",
+    "longA": "SFRPG.WeaponTypesLongArms",
+    "heavy": "SFRPG.WeaponTypesHeavy",
+    "sniper": "SFRPG.WeaponTypesSniper",
+    "grenade": "SFRPG.WeaponTypesGrenades",
+    "special": "SFRPG.WeaponTypesSpecial",
+    "solarian": "SFRPG.WeaponTypesSolarian"
+*/
