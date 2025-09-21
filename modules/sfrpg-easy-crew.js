@@ -72,7 +72,7 @@ async function copyImage(event) {
     if (token) {
 
 
-      console.log("Token found:", token);      actor = token.actor;
+      console.log("Token found:", token); actor = token.actor;
     } else {
       console.error("Token not found with ID:", tokenId);
       return;
@@ -93,9 +93,10 @@ async function copyImage(event) {
 }
 
 async function findNewActorPicture(actor) {
-console.log("Find New Actor Picture:", actor.name, actor.img);
+  console.log("Find New Actor Picture:", actor.name, actor.img);
   return actor.img
 }
+
 
 
 async function setAttacks(event) {
@@ -107,6 +108,8 @@ async function setAttacks(event) {
   const isToken = button.data("token");
   const tokenId = button.data("tokenid");
   const multiAttacks = [];
+  const lootContainers = [];
+
   // console.log("Actor ID:", actorId, "Is Token:", isToken, "Token ID:", tokenId);
   if (isToken) {
     const token = await canvas.tokens.get(tokenId);
@@ -125,6 +128,8 @@ async function setAttacks(event) {
     }
   }
   if (!actor.system.details.combatRole) { ui.notifications.warn("Set NPC Combat role."); return; }
+  const actorCR = convertCR(actor.system.details.cr);
+
   // console.log("Actor:", actor);
   const packs = game.packs.filter(p =>
     p.documentName === "Item" && (["sfrpg"].includes(p.metadata.packageName)) && (p.metadata.name === "equipment")
@@ -151,12 +156,15 @@ async function setAttacks(event) {
   });
 
   const upgradeItems = actor.items.contents.filter(item => {
+    // see loot containers
+    if (item.type === "container" && item.name.toLowerCase().includes("loot")) {
+      lootContainers.push(item)
+    }
+    //filter for weapons only
     let flag = true
     flag = flag && ["weapon"].includes(item.type)
-    // console.log("Item:", item.name, (item.parentItem ? false : true));
+    // console.log("Item:", correctedName, (item.parentItem ? false : true));
     flag = flag && (item.parentItem ? false : true);
-    //  flag = flag && ["advancedM", "basicM", "smallA", "longA", "heavy", "sniper", "special", "solarian"].includes(item.system.weaponType)
-
     return flag
   });
 
@@ -171,6 +179,8 @@ async function setAttacks(event) {
     //   console.log("Max Roll:", maxRoll);
     return maxRoll;
   }
+  //end of calculateMaxRoll
+
   // const affectedAtt = { str: "mwak", dex: "rwak" } // what are the boosted stats
   const stats = ["str", "dex", "con", "int", "wis", "cha"]
   stats.sort((a, b) => {
@@ -183,38 +193,71 @@ async function setAttacks(event) {
   });
 
 
-
-  // console.log("Upgrade Items:", upgradeItems, SEC.NPCAttackStats[actor.system.details.combatRole][actor.system.details.cr].energy, meleecompendiumweapons);
-  //cycle through and recalculate
   const itemsToDelete = [];
   const itemsToUpdate = [];
   const itemsToCreate = [];
   const multiAttackNames = ["multiatk", "multiattack"];
+  const newLootContainer = null
+  //cycle through and recalculate
   upgradeItems.forEach((item, index) => {
     multiAttackNames.some(tag => item.name.toLowerCase().includes(tag)) ? multiAttacks.push(item) : null
   })
 
   // update Items 
+  if (lootContainers.length === 0) {
+    ui.notifications.warn("No loot containers found. Create default.");
+    newLootContainer = await actor.createEmbeddedDocuments("Item", [{
+      name: "Loot - " + actor.name,
+      type: "container",
+      img: "systems/sfrpg/icons/equipment/technological%20items/xenobiologists-field-kit.webp",
+      system: {
+        container: {
+          isOpen: true,
+          storage: [
+            {
+              type: "bulk",
+              acceptsType: ["ammunition", "augmentation", "consumable", "container", "equipment", "fusion", "goods", "hybrid", "magic", "shield", "technological", "upgrade", "weapon", "weaponAccessory"],
+              affectsEncumbrance: false,
+              amount: "1303",
+              subtype: "",
+              weightProperty: "bulk"
+            }
+          ],
+        },
+        description: { value: "<h2>Bequest by " + actor.name + "</h2><p>I hereby give all the rest of my real and personal property, whatever and wherever situated, to the party for its general purposes.</p>", chat: "", unidentified: "" }
+      },
+      flags: { "SEC": { loot: true } }
+    }]);
+    console.log("Created Loot Container:", newLootContainer);
+    // newLootContainer[0].update({ "system.storage[0].amount": 13013 });
+
+    lootContainers.push(newLootContainer[0]);
+
+  }
+  console.log("Loot Containers:", lootContainers);
+
+
 
   upgradeItems.forEach((item, index) => {
     item.img = item.img.includes("icons/default/") ? findNewPicture(item) : item.img;
-    console.log("Updating Item:", item.name, item.img);
+
     const okLevel = (((item.system.level - 2) < actor.system.details.cr) && ((item.system.level + 4) > actor.system.details.cr))
     const existingCompendiumItem = item._source._stats.compendiumSource
     const isMultiAttack = multiAttackNames.some(tag => item.name.toLowerCase().includes(tag))
     const multiAttack = 6 * (isMultiAttack ? 1 : 0);
 
     let attackBonus = 0
-    const attackStat = SEC.NPCAttackStats[actor.system.details.combatRole][actor.system.details.cr];
+
+    const attackStat = SEC.NPCAttackStats[actor.system.details.combatRole][actorCR];
     const meleeW = ["advancedM", "basicM"].includes(item.system.weaponType)
     const meleeA = ["mwak", "msak"].includes(item.system.actionType)
-    checkCompendium(actor, item, meleeW ? meleecompendiumweapons : rangedcompendiumweapons).then((retunData) => {
+    checkCompendium(actor, item, meleeW ? meleecompendiumweapons : rangedcompendiumweapons).then((returnData) => {
 
-      console.log("Check Compendium Result:", retunData);
+      console.log("Check Compendium Result:", returnData);
 
-      const exact = retunData.exact
-      const roots = retunData.root
-      const similar = retunData.similar
+      const exact = returnData.exact
+      const roots = returnData.root
+      const similar = returnData.similar
 
       // attack bonus calculation
       if (majorStat === "str") {
@@ -288,8 +331,8 @@ async function setAttacks(event) {
         newItem.img = item.img;
         newItem.system.proficient = true;
         newItem.system.damage.parts.forEach((part, index) => {
-          part.formula += (" + " + `${actor.system.details.cr}`);
-          console.log("Damage Part:", part, (" + " + `${actor.system.details.cr}`));
+          part.formula += actor.system.details.cr < 1 ? "" : " + " + `${actor.system.details.cr}`;
+          // console.log("Damage Part:", part, (" + " + `${actor.system.details.cr}`));
         });
         const version = game.modules.get("sfrpg-easy-crew")?.version || "1.0.0";
         const flags = { SEC: { version: version } };
@@ -297,7 +340,7 @@ async function setAttacks(event) {
 
         console.log("Updating Item from Compendium:", item.name, newItem);
         item.update({
-          'name': newItem.name,
+          'name': ">" + newItem.name,
           'type': newItem.type,
           'system': newItem.system,
           'flags': newItem.flags,
@@ -306,12 +349,48 @@ async function setAttacks(event) {
         });
         // }
 
+        // this is the original compendium item = sourceItem
+        // is there an item in the loot container with this name
+
+
+        //  const result =  actor.createEmbeddedDocuments("Item", [newItemData]);
+        //  addedItem = targetActor.getItem(result._id);
+
+        //  
+        let existingItem = false
+        lootContainers.forEach(container => {
+          existingItem = container.contents.some(i => {
+            console.log("Loot Container Item:", i.name, sourceItem.name);
+            return i.name === sourceItem.name;
+          });
+          console.log("Existing Item in Loot Container:", existingItem);
+
+        })
+
+        if (!existingItem) {
+          const newItemData = sourceItem.toObject();
+          const newItem = actor.createEmbeddedDocuments("Item", [newItemData]).then((result) => {
+
+            console.log("Created Loot Item:", result)
+            const newContents = []
+            newContents.push({ id: result[0]._id, index: 0 });
+            const combinedContents = lootContainers[0].system.container.contents.concat(newContents);
+            console.log("Adding to Loot Container:", lootContainers[0], newContents, combinedContents);
+            lootContainers[0].update({ "system.container.contents": combinedContents });
+
+
+
+          });
+
+        }
       }
 
     });
     console.log("Post Flags:", item.flags, item.system);
 
   })
+  // update Items end
+
 
   /***
    *  if (this.type === "character" && game.settings.get("sfrpg", "autoAddUnarmedStrike")) {
@@ -326,11 +405,18 @@ async function setAttacks(event) {
    * 
    * 
    */
-  //  console.log("All Items:", melee);
 
-  const dmgByCR = calculateMaxRoll(SEC.NPCAttackStats[actor.system.details.combatRole][actor.system.details.cr].standard);
+  console.log("All Items:", actor.system.details.combatRole, actor.system.details.cr, actorCR, upgradeItems, multiAttacks);
+
+  const dmgByCR = calculateMaxRoll(SEC.NPCAttackStats[actor.system.details.combatRole][actorCR].standard);
 
   console.log("Max Damage CR:", dmgByCR);
+}
+
+function convertCR(cr) {
+  if (cr == 1 / 2) return "1/2";
+  if (cr == 1 / 3) return "1/3";
+  return cr.toString();
 }
 
 function findNewPicture(item) {
@@ -381,8 +467,11 @@ async function checkCompendium(actor, item, weaponArray) {
   let root = [];
   let similar = [];
   let category = "uncategorized";
+
+  const correctedName = item.name.startsWith(">") ? item.name.slice(1) : item.name
+
   weaponArray.forEach(weapon => {
-    if (weapon.name.toLowerCase() === item.name.toLowerCase()) {
+    if (weapon.name.toLowerCase() === correctedName.toLowerCase()) {
       exact = weapon;
       if (item.system.weaponCategory === "uncategorized") {
         item.system.weaponCategory = weapon.system.weaponCategory;
@@ -390,7 +479,7 @@ async function checkCompendium(actor, item, weaponArray) {
     }
   })
   weaponArray.forEach(weapon => {
-    if (weapon.name.split(", ")[0].trim().toLowerCase() === item.name.split(", ")[0].trim().toLowerCase()) {
+    if (weapon.name.split(", ")[0].trim().toLowerCase() === correctedName.split(", ")[0].trim().toLowerCase()) {
       if (((weapon.system.level - 2) < actor.system.details.cr) && ((weapon.system.level + 4) > actor.system.details.cr)) {
         root.push(weapon);
       }
@@ -453,7 +542,7 @@ async function setNPC(event) {
   //  console.log(templateData)
 
 
-  const content = await renderTemplate("modules/sell-my-shit/templates/set-npc-hp.html", templateData);
+  const content = await renderTemplate("modules/sfrpg-easy-crew/templates/set-npc-hp.html", templateData);
 
 
 
@@ -523,8 +612,8 @@ async function setNPCAbilities(actor) {
   let expertskillvalue = 0
   let goodskillvalue = 0
   const newSkills = foundry.utils.duplicate(actor.system.skills)
-  const skillmaster = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].skillmaster;
-  const skillgood = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].skillgood;
+  const skillmaster = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].skillmaster;
+  const skillgood = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].skillgood;
   for (let [key, value] of Object.entries(newSkills)) {
     skills.push({ key: key, value: foundry.utils.duplicate(value) })
   }
@@ -573,13 +662,13 @@ async function setNPCAbilities(actor) {
   stats.sort((a, b) => {
     return (actor.system.abilities[b].mod || 0) - (actor.system.abilities[a].mod || 0);
   });
-  const abilityScores = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].modifiers;
+  const abilityScores = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].modifiers;
   const abilities = foundry.utils.duplicate(actor.system.abilities);
-  eac.value = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].eac;
-  kac.value = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].kac;
-  fort.value = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].fort;
-  reflex.value = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].ref;
-  will.value = SEC.NPCMainStats[actor.system.details.combatRole][actor.system.details.cr].wil;
+  eac.value = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].eac;
+  kac.value = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].kac;
+  fort.value = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].fort;
+  reflex.value = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].ref;
+  will.value = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].will;
 
   eac.base = eac.value;
   kac.base = kac.value;
