@@ -1,4 +1,5 @@
-.NPCSETSKILL button {
+.NPCSETSKILL button,
+ .optimise-ship button{
     background: linear-gradient(130deg, #0c2d4a 0, #235683 40%, #235683 60%, #1d7dd1 100%);
     color: #fff;
     border: none;

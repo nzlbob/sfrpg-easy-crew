@@ -1,5 +1,7 @@
 
 import { SEC } from "./npcdata.js"
+import { optimiseShip } from "./optimiseShip.js";
+
 
 Hooks.on("init", function () {
   // console.log("This code runs once the Foundry VTT software begins its initialization workflow.");
@@ -34,12 +36,13 @@ Hooks.on("renderActorSheet", (app, html, data) => {
   if ((actor.type === "starship")) {
     const middleColumn = html.find(".crew-settings.flexrow");
     const shipAttributes = html.first(".flexcol.traits");
-    const button = '<div class="NPCSETSKILL" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Set NPC Skills</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
+    const button = '<div class="NPCSETSKILL" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Set NPC Skills</button> </div><div class="optimise-ship" data-id = "' + id + '"data-type = "' + type + '"> <button type="button">Optimise</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     const buttonRepair = '<div class="repairship" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Repair Ship</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     if (actor.system.crew.useNPCCrew) middleColumn.find(".settings.flexrow").append(button);
     // middleColumn.find(".settings.flexrow").append(buttonRepair);
     shipAttributes.find(".flexcol.traits").eq(0).find(".flexrow").find(".flexcol").find("div").append(buttonRepair);
     html.find(".NPCSETSKILL").click(onSetNPCSkills.bind(html));
+    html.find(".optimise-ship").click(optimiseShip.bind(html));
     html.find(".repairship").click(onRepairShip.bind(html));
   }
   if (["npc", "npc2"].includes(actor.type)) {

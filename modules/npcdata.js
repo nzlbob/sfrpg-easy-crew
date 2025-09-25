@@ -356,7 +356,7 @@ SEC.attackImages = {
             "systems/sfrpg/icons/equipment/weapons/laser-pistol-perihelion.webp",
             "systems/sfrpg/icons/equipment/weapons/laser-pistol-zenith.webp"],
         "smg": ["systems/sfrpg/icons/equipment/weapons/arc_rifle_static.webp"],
-        
+
         "needler": ["systems/sfrpg/icons/equipment/weapons/needler-pistol-advanced.webp",
             "systems/sfrpg/icons/equipment/weapons/needler-pistol-elite.webp",
             "systems/sfrpg/icons/equipment/weapons/needler-pistol-paragon.webp",
@@ -400,8 +400,97 @@ SEC.attackImages = {
     "solarian": {
         "default": ["icons/commodities/gems/gem-rough-cushion-orange-red.webp"]
     }
+
+
 };
+
+SEC.buildFactors = {
+    "frameCost": 0.18,
+    "frameUpgrade": 0.3,
+    "powerCore": 4,
+    "defense": 0.2,
+    "offense": 0.3,
+    "computer": { base: 0.3, nodes: 2 },
+    "sensor": 0.2,
+    "weapon": 5,
+    "armor": 0.8, // tier + value
+    "shields": 0.14,
+    "thrusters": 14,
+    "sizeFactors": {
+        "tiny": {
+            arcLimit: 2,
+            fixedLimit: ["light"],
+            turretLimit: ["light"],
+        },
+
+        "small": {
+            arcLimit: 2,
+            fixedLimit: ["light"],
+            turretLimit: ["light"]
+        },
+
+        "medium": {
+            arcLimit: 3,
+            fixedLimit: ["light", "heavy"],
+            turretLimit: ["light", "heavy"]
+        },
+        "large": {
+            arcLimit: 4,
+            fixedLimit: ["light", "heavy"],
+            turretLimit: ["light", "heavy"]
+        },
+
+        "huge": {
+            arcLimit: 4,
+            fixedLimit: ["light", "heavy", "capital"],
+            turretLimit: ["light", "heavy"]
+        },
+
+        "gargantuan": {
+            arcLimit: 4,
+            fixedLimit: ["light", "heavy", "capital"],
+            turretLimit: ["light", "heavy"]
+        },
+
+        "colossal": {
+            arcLimit: 4,
+            fixedLimit: ["light", "heavy", "capital"],
+            turretLimit: ["light", "heavy"]
+        }
+    }
+}
 /*
+
+1. Largest hull with turret
+
+
+
+PHB 305 
+By spending 4 BP, the crew can upgrade a light weapon mount in any of the aft, forward, port, or starboard arcs to a
+heavy weapon mount. 
+
+By spending 6 BP, the crew can upgrade a light weapon mount on a turret to a heavy weapon mount. 
+
+By spending 5 Build Points, the crew can upgrade a heavy weapon mount in any of the aft, forward, port, or starboard arcs to a
+capital weapon mount. 
+
+Heavy weapons can be mounted on only Medium or larger starships. 
+
+Capital weapons can be mounted on
+only Huge or larger starships and can’t be mounted on turrets.
+
+By spending 3 BP, the crew can fit a new light weapon mount
+in any of the aft, forward, port, or starboard arcs with enough
+free space. 
+
+By spending 5 BP, the crew can fit a new light weapon
+mount on a turret that has enough free space. 
+
+Tiny and Small starships can have only two weapon mounts per arc (and per turret). 
+Medium and Large starships can have only three weapon mounts per arc (and per turret). 
+Huge and larger starships can have only four weapon mounts per arc (and per turret).
+
+
     "basicM": "SFRPG.WeaponTypesBasicMelee",
     "advancedM": "SFRPG.WeaponTypesAdvMelee",
     "smallA": "SFRPG.WeaponTypesSmallArms",
