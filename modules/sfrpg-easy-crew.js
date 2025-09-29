@@ -34,16 +34,80 @@ Hooks.on("renderActorSheet", (app, html, data) => {
   const actor = app.actor;
 
   if ((actor.type === "starship")) {
+
+    // const weapons = html.querySelector('.tab.weapons.flexcol');
+
+    const weapons = html.find(".tab.weapons.flexcol");
+
+
+
+      const row = weapons[0].querySelectorAll("div.item-name.flexrow.rollable")
+    for (let i = 0; i < row.length; i++) {
+      const parent = row[i].parentElement
+      const itemName = row[i].querySelector("h4")
+
+    //  console.log("Item Names:", itemName)
+
+
+      let itemNameText = itemName.innerText
+
+    //  console.log("Starship Sheet Rendered", parent, weapons, row, itemName, itemNameText);
+
+      const x = parent.dataset.itemId
+    //  console.log("Starship Sheet Rendered", x);
+      const item = actor.items.get(x)
+     // console.log("Starship Item:", item);
+      const range = item.system.range
+
+      itemNameText = itemNameText + " " + (range ? "(" + range + ")" : "")
+      itemName.innerText = itemNameText
+    }
     const middleColumn = html.find(".crew-settings.flexrow");
     const shipAttributes = html.first(".flexcol.traits");
     const button = '<div class="NPCSETSKILL" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Set NPC Skills</button> </div><div class="optimise-ship" data-id = "' + id + '"data-type = "' + type + '"> <button type="button">Optimise</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     const buttonRepair = '<div class="repairship" data-id = "' + id + '"data-type = "' + type + '"> <button type="button"> Repair Ship</button> </div>'//  $(`<button class="npc-button" title="NPC"><i class="fas fa-dollar-sign"></i></button>`);
     if (actor.system.crew.useNPCCrew) middleColumn.find(".settings.flexrow").append(button);
     // middleColumn.find(".settings.flexrow").append(buttonRepair);
-    shipAttributes.find(".flexcol.traits").eq(0).find(".flexrow").find(".flexcol").find("div").append(buttonRepair);
+
+
+
+
+
+    //  console.log(app)
+    const inCombat = game.combat ? (game.combat.combatants?.find(c => c.token?.id === app.token?.id) ? true : false) : false;
+    //   console.log(`In Combat:`, inCombat, game.combat?.combatants, app.token?.id);
+    if (!inCombat) {
+      shipAttributes.find(".flexcol.traits").eq(0).find(".flexrow").find(".flexcol").find("div").append(buttonRepair);
+    }
+
+    /**
+     * Change shield header color
+     */
+    const arc = ["forward", "port", "starboard", "aft"]
+    const name = ["Forward", "Left", "Right", "Aft"]
+    const tooltip = 'data-tooltip-direction="UP" data-tooltip= "Engineer - Divert. Power to Shields (' + Math.floor(actor.system.attributes.power.max * .05) + ')"'
+    const shield = html.find(".attribute.defenses");
+    //   console.log("Shield Element:", shield);
+
+    for (let i = 0; i < 4; i++) {
+      let a = shield[i].querySelector(".box-title")
+      a.outerHTML = '<div ' + tooltip + ' class="flexrow attribute-name box-title"> <button class="engDivertdn" data-arc = "' + arc[i] + '" data-divert = "dn" data-id = "' + id + '"data-type = "' + type + '" type="button">-</button> <h4>' + name[i] + '</h4> <button class="engDivertup"  data-arc = "' + arc[i] + '" data-divert = "up" data-id = "' + id + '"data-type = "' + type + '" type="button">+</button></div>'
+    }
+
+    /**
+     * End of shield header color change
+     * 
+     */
+
+    /**
+     * Bind Actions
+     */
+
     html.find(".NPCSETSKILL").click(onSetNPCSkills.bind(html));
     html.find(".optimise-ship").click(optimiseShip.bind(html));
     html.find(".repairship").click(onRepairShip.bind(html));
+    html.find(".engDivertdn").click(onDivertPower.bind(html));
+    html.find(".engDivertup").click(onDivertPower.bind(html));
   }
   if (["npc", "npc2"].includes(actor.type)) {
     const tokenid = actor.token ? actor.token.id : "null";
@@ -62,8 +126,55 @@ Hooks.on("renderActorSheet", (app, html, data) => {
   }
 })
 
+async function onDivertPower(event) {
+  // console.log("Divert Power clicked:", event);
+  var actor
+  const button = $(event.currentTarget);
+  const actorId = button.data("id");
+  const isToken = button.data("type") === "token";
+  const arc = button.data("arc");
+  const direction = button.data("divert") === "up" ? true : false;
+  // console.log("Direction:", actorId, isToken, arc, direction);
+
+  if (isToken) {
+    const token = await canvas.tokens.get(actorId);
+    if (token) {
+      actor = token.actor;
+    } else {
+      console.error("Token not found with ID:", actorId);
+      return;
+    }
+  } else {
+    actor = await game.actors.get(actorId);
+    if (!actor) {
+      console.error("Actor not found with ID:", actorId);
+      return;
+    }
+  }
+  // console.log("Actor:", actor, arc);
+
+  const power = direction ? Math.min(Math.floor(actor.system.attributes.power.max * .05), actor.system.attributes.shields.max - actor.system.attributes.shields.value) : Math.floor(actor.system.attributes.power.max * .05);
+  // console.log("Power to divert:", power);
+  let update = {};
+  const shieldArc = "system.quadrants." + arc + ".shields.value"
+  //console.log("Power to divert:", power, shieldArc,actor.system.quadrants);
+  if (direction) {
+    update = {
+      [shieldArc]: Math.min(actor.system.quadrants[arc].shields.value + power, actor.system.attributes.shields.limit)
+    };
+  } else {
+    update = {
+      [shieldArc]: Math.max(actor.system.quadrants[arc].shields.value - power, 0)
+    };
+  }
+  // console.log("Update Data:", update);
+  await actor.update(update);
+  ui.notifications.info("Diverted " + power + " power to " + arc + " shields.");
+
+}
+
 async function copyImage(event) {
-  console.log("Copy NPC Image clicked");
+  //  console.log("Copy NPC Image clicked");
   var actor
   const button = $(event.currentTarget);
   const actorId = button.data("id");

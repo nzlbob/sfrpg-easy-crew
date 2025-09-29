@@ -1,5 +1,6 @@
 .NPCSETSKILL button,
- .optimise-ship button{
+ .optimise-ship button,
+ .box-title button {
     background: linear-gradient(130deg, #0c2d4a 0, #235683 40%, #235683 60%, #1d7dd1 100%);
     color: #fff;
     border: none;
@@ -16,6 +17,23 @@
     min-height: 18px;
     width: 80px;
  }
+.box-title button.engDivertdn {
+    background: linear-gradient(130deg, #4a390c 0, #836923 40%, #836923 60%, #d1a11d 100%);
+   font-size: larger;
+    width: 15px;
+ }
+
+
+.box-title button.engDivertup {
+    background: linear-gradient(130deg, #0c4a1b 0, #23833b 40%, #238338 60%, #1dd162 100%);
+   font-size: larger;
+   width: 15px;
+ }
+
+ .optimise-ship button{
+    background: linear-gradient(130deg, #55440c 0, #796010 40%, #927516 60%, #d1a71d 100%);
+ }
+
  .repairship button {
     background: linear-gradient(130deg, #0c4a2b 0, #238330 40%, #238328 60%, #1dd13b 100%);
     color: #fff;

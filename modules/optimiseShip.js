@@ -73,6 +73,10 @@ function findSuitablePowerCore(actor, powerCores) {
     return true;
   }).sort((a, b) => a.system.pcu - b.system.pcu);
   console.log("Power cores found:", sizedPowerCores);
+  if (sizedPowerCores.length === 0) {
+    ui.notifications.error("No suitable power core found.");
+    return [];
+  }
   return [sizedPowerCores[0]];
 }
 
