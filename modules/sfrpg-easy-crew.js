@@ -440,8 +440,9 @@ async function setAttacks(event) {
         // if (sourceItem) {
         const newItem = foundry.utils.duplicate(sourceItem);
         newItem.system.attackBonus = attackBonus;
-        newItem.system.ability = null;
+        newItem.system.ability = "";
         newItem.system.equipped = true;
+
         newItem.img = item.img;
         newItem.system.proficient = true;
         newItem.system.damage.parts.forEach((part, index) => {
