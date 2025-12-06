@@ -446,7 +446,9 @@ async function setAttacks(event) {
         newItem.img = item.img;
         newItem.system.proficient = true;
         newItem.system.damage.parts.forEach((part, index) => {
+          if (!(newItem.system.weaponType==="grenade")){
           part.formula += actor.system.details.cr < 1 ? "" : " + " + `${actor.system.details.cr}`;
+          }
           // console.log("Damage Part:", part, (" + " + `${actor.system.details.cr}`));
         });
         const version = game.modules.get("sfrpg-easy-crew")?.version || "1.0.0";
