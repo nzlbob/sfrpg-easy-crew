@@ -41,22 +41,22 @@ Hooks.on("renderActorSheet", (app, html, data) => {
 
 
 
-      const row = weapons[0].querySelectorAll("div.item-name.flexrow.rollable")
+    const row = weapons[0].querySelectorAll("div.item-name.flexrow.rollable")
     for (let i = 0; i < row.length; i++) {
       const parent = row[i].parentElement
       const itemName = row[i].querySelector("h4")
 
-    //  console.log("Item Names:", itemName)
+      //  console.log("Item Names:", itemName)
 
 
       let itemNameText = itemName.innerText
 
-    //  console.log("Starship Sheet Rendered", parent, weapons, row, itemName, itemNameText);
+      //  console.log("Starship Sheet Rendered", parent, weapons, row, itemName, itemNameText);
 
       const x = parent.dataset.itemId
-    //  console.log("Starship Sheet Rendered", x);
+      //  console.log("Starship Sheet Rendered", x);
       const item = actor.items.get(x)
-     // console.log("Starship Item:", item);
+      // console.log("Starship Item:", item);
       const range = item.system.range
 
       itemNameText = itemNameText + " " + (range ? "(" + range + ")" : "")
@@ -203,7 +203,18 @@ async function copyImage(event) {
 
   const reply = await actor.updateSource({ "prototypeToken.texture.src": image });
   console.log("Updated Actor Image:", reply);
-
+  if (actor.isToken) {
+    const updateToken = await canvas.tokens.get(actor.token.id).document.update({ "texture.src": image });
+    console.log("Updated Token Image:", updateToken);
+  }
+  else {
+    canvas.tokens.placeables.forEach(async (token) => {
+      if (token.actor?.id === actor.id) {
+        const updateToken = await token.document.update({ "texture.src": image });
+        console.log("Updated Token Image:", updateToken);
+      }
+    });
+  }
 }
 
 async function findNewActorPicture(actor) {
@@ -311,7 +322,7 @@ async function setAttacks(event) {
   const itemsToUpdate = [];
   const itemsToCreate = [];
   const multiAttackNames = ["multiatk", "multiattack"];
-  const newLootContainer = null
+  let newLootContainer = null
   //cycle through and recalculate
   upgradeItems.forEach((item, index) => {
     multiAttackNames.some(tag => item.name.toLowerCase().includes(tag)) ? multiAttacks.push(item) : null
@@ -446,8 +457,13 @@ async function setAttacks(event) {
         newItem.img = item.img;
         newItem.system.proficient = true;
         newItem.system.damage.parts.forEach((part, index) => {
-          if (!(newItem.system.weaponType==="grenade")){
-          part.formula += actor.system.details.cr < 1 ? "" : " + " + `${actor.system.details.cr}`;
+          let specialisationDamage = true
+          newItem.system.properties.explode ? specialisationDamage = false : specialisationDamage;
+          newItem.system.properties.blast ? specialisationDamage = false : specialisationDamage;
+          newItem.system.properties.line ? specialisationDamage = false : specialisationDamage;
+          newItem.system.weaponType === "grenade" ? specialisationDamage = false : specialisationDamage;
+          if (specialisationDamage) {
+            part.formula += actor.system.details.cr < 1 ? "" : " + " + `${actor.system.details.cr}`;
           }
           // console.log("Damage Part:", part, (" + " + `${actor.system.details.cr}`));
         });
