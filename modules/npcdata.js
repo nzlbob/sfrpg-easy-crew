@@ -1,5 +1,7 @@
 export const SEC = {};
 
+SEC
+
 SEC.HP = {
     trap: {
         "1/2": 12,

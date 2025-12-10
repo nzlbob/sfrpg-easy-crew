@@ -22,10 +22,55 @@ Hooks.on("init", function () {
     type: Boolean,
     default: false
   });
+console.log("SFRPG Easy Crew Module Initialized",CONFIG);
+CONFIG.SFRPG.combatRoles = {
+    "trap": "SEC.CombatRoles.Trap",
+    "combatant": "SFRPG.CombatRoles.Combatant",
+    "expert": "SFRPG.CombatRoles.Expert",
+    "spellcaster": "SFRPG.CombatRoles.Spellcaster"
+};
+
+CONFIG.SFRPG.combatRolesDescriptions = {
+  "trap": "SFRPG.CombatRoles.Descriptions.Trap",
+    "combatant": "SFRPG.CombatRoles.Descriptions.Combatant",
+    "expert": "SFRPG.CombatRoles.Descriptions.Expert",
+    "spellcaster": "SFRPG.CombatRoles.Descriptions.Spellcaster"
+};
+
+CONFIG.SFRPG.combatRoleImages = {
+  "trap": "modules/sfrpg-easy-crew/images/tokens/Square Pit.webp",
+    "combatant": "systems/sfrpg/images/cup/gameplay/combatant.webp",
+    "expert": "systems/sfrpg/images/cup/gameplay/expert.webp",
+    "spellcaster": "systems/sfrpg/images/cup/gameplay/spellcaster.webp"
+};
+
+
 });
 
 Hooks.on("ready", function () {
   //  console.log("This code runs once core initialization is ready and game data is available.");
+
+  /*
+sfrpg.config.combatRoles = {
+    "trap": "SFRPG.CombatRoles.Trap",
+    "combatant": "SFRPG.CombatRoles.Combatant",
+    "expert": "SFRPG.CombatRoles.Expert",
+    "spellcaster": "SFRPG.CombatRoles.Spellcaster"
+};
+
+sfrpg.config.combatRolesDescriptions = {
+  "trap": "SFRPG.CombatRoles.Descriptions.Trap",
+    "combatant": "SFRPG.CombatRoles.Descriptions.Combatant",
+    "expert": "SFRPG.CombatRoles.Descriptions.Expert",
+    "spellcaster": "SFRPG.CombatRoles.Descriptions.Spellcaster"
+};
+
+sfrpg.config.combatRoleImages = {
+  "trap": "systems/sfrpg/images/cup/gameplay/trap.webp",
+    "combatant": "systems/sfrpg/images/cup/gameplay/combatant.webp",
+    "expert": "systems/sfrpg/images/cup/gameplay/expert.webp",
+    "spellcaster": "systems/sfrpg/images/cup/gameplay/spellcaster.webp"
+};*/
 });
 
 Hooks.on("renderActorSheet", (app, html, data) => {
@@ -745,6 +790,8 @@ async function setNPCAbilities(actor) {
   let expertskillvalue = 0
   let goodskillvalue = 0
   const newSkills = foundry.utils.duplicate(actor.system.skills)
+if (actor.system.details.combatRole === "trap") { ui.notifications.warn("Trap error"); return; }
+  console.log("NPC Abilities Calculation:", actor.system.details.combatRole, actor.system.details.cr, newSkills);
   const skillmaster = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].skillmaster;
   const skillgood = SEC.NPCMainStats[actor.system.details.combatRole][convertCR(actor.system.details.cr)].skillgood;
   for (let [key, value] of Object.entries(newSkills)) {

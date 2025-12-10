@@ -2,5 +2,10 @@
     "elevator": {
         "title": "The Elevator",
         "description": "This module makes elevators"
-    }
+    },
+    "SEC": {"CombatRoles": {"Trap": "Trap",
+"Descriptions": {"Trap": "A stationary hazard that activates when a creature comes within its trigger area."}}
+
+
+}
 }
