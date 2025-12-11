@@ -9,7 +9,7 @@
       "flags": {}
     }
   ],
-  "version": "0.19",
+  "version": "0.20",
   "compatibility": {
     "minimum": "10",
     "verified": "13",
@@ -18,6 +18,62 @@
     "esmodules": [
     "modules/sfrpg-easy-crew.js"
   ],
+  
+  "packFolders": [
+    {
+      "name": "SF Easy NPC Crew",
+      "packs": [
+        "sec_characters",
+        "sec_macros",
+        "sec_items"
+      ],
+      "color": "#19d6b7"
+    }   
+
+  ],
+
+"packs": [
+    {
+      "name": "sec_characters",
+      "label": "Bonus Actors",
+      "system": "sfrpg",
+      "type": "Actor",
+      "path": "./packs/sec_characters",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+        {
+      "name": "sec_macros",
+      "label": "Bonus Macros",
+      "system": "sfrpg",
+      "type": "Macro",
+      "path": "./packs/sec_macros",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+    
+    
+    ,
+        {
+      "name": "sec_items",
+      "label": "Bonus Items",
+      "system": "sfrpg",
+      "type": "Item",
+      "path": "./packs/sec_items",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
+
   "languages": [
     {
       "lang": "en",
