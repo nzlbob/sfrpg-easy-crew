@@ -301,13 +301,15 @@ async function setAttacks(event) {
   const actorCR = convertCR(actor.system.details.cr);
 
   // console.log("Actor:", actor);
-  const packs = game.packs.filter(p =>
-    p.documentName === "Item" && (["sfrpg"].includes(p.metadata.packageName)) && (p.metadata.name === "equipment")
-  );
+  const packs = game.packs.filter(p => {
+    console.log("Pack Check:", p.documentName, p.metadata.packageName, p.metadata.name);
+    return p.documentName === "Item" && (["sfrpg","sfrpg-easy-crew"].includes(p.metadata.packageName)) && (["equipment","sec_items"].includes(p.metadata.name));
+  });
   //  console.log("Pack:", packs);
   const compendiumweapons = [];
 
   for (const pack of packs) {
+    console.log("Loading Pack:", pack.metadata.label);
     try {
       const items = await pack.getDocuments({ type: "weapon" });
       compendiumweapons.push(...items);
@@ -503,10 +505,11 @@ async function setAttacks(event) {
         newItem.system.proficient = true;
         newItem.system.damage.parts.forEach((part, index) => {
           let specialisationDamage = true
-          newItem.system.properties.explode ? specialisationDamage = false : specialisationDamage;
-          newItem.system.properties.blast ? specialisationDamage = false : specialisationDamage;
-          newItem.system.properties.line ? specialisationDamage = false : specialisationDamage;
+         // newItem.system.properties.explode ? specialisationDamage = false : specialisationDamage;
+        //  newItem.system.properties.blast ? specialisationDamage = false : specialisationDamage;
+        //  newItem.system.properties.line ? specialisationDamage = false : specialisationDamage;
           newItem.system.weaponType === "grenade" ? specialisationDamage = false : specialisationDamage;
+          
           if (specialisationDamage) {
             part.formula += actor.system.details.cr < 1 ? "" : " + " + `${actor.system.details.cr}`;
           }
