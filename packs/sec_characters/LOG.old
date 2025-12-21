@@ -1,8 +1,3 @@
-2025/12/14-10:28:52.896 4cc Recovering log #51
-2025/12/14-10:28:52.900 4cc Delete type=0 #51
-2025/12/14-10:28:52.900 4cc Delete type=3 #50
-2025/12/14-10:30:35.976 dc8 Level-0 table #55: started
-2025/12/14-10:30:35.977 dc8 Level-0 table #55: 0 bytes OK
-2025/12/14-10:30:35.978 dc8 Delete type=0 #53
-2025/12/14-10:30:35.978 dc8 Manual compaction at level-0 from '!actors!K1p3qgNmGm6oBciy' @ 72057594037927935 : 1 .. '!actors.items!spxPcUX9AXDKtX5b.yowGo4yvX8DsmkKD' @ 0 : 0; will stop at (end)
-2025/12/14-10:30:35.979 dc8 Manual compaction at level-1 from '!actors!K1p3qgNmGm6oBciy' @ 72057594037927935 : 1 .. '!actors.items!spxPcUX9AXDKtX5b.yowGo4yvX8DsmkKD' @ 0 : 0; will stop at (end)
+2025/12/20-10:31:32.513 5150 Recovering log #72
+2025/12/20-10:31:32.513 5150 Delete type=0 #72
+2025/12/20-10:31:32.513 5150 Delete type=3 #70
