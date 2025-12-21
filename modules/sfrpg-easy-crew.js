@@ -71,6 +71,15 @@ sfrpg.config.combatRoleImages = {
     "expert": "systems/sfrpg/images/cup/gameplay/expert.webp",
     "spellcaster": "systems/sfrpg/images/cup/gameplay/spellcaster.webp"
 };*/
+  // Ensure default Starship Chase lists exist for Obstacles and Environmental Effects
+  ensureChaseLists().catch(e => console.warn("SEC Chase: ensureChaseLists failed", e));
+  // Wire journal roll buttons when journals render
+  Hooks.on("renderJournalSheet", (app, html) => {
+    html.on("click", ".sec-chase-roll", onChaseRollClick);
+    html.on("click", ".sec-chase-outcome", onChaseOutcomeClick);
+  });
+  // Add Scene Config tab for Starship Chase generator
+  Hooks.on("renderSceneConfig", (app, html) => injectChaseTab(app, html));
 });
 
 Hooks.on("renderActorSheet", (app, html, data) => {
@@ -170,6 +179,450 @@ Hooks.on("renderActorSheet", (app, html, data) => {
 
   }
 })
+
+// -------------------------
+// Starship Chase Generator
+// -------------------------
+
+const SEC_CHASE = {
+  folderName: "SEC Chase",
+  obstaclesJournal: "SEC Chase: Obstacles",
+  effectsJournal: "SEC Chase: Environmental Effects",
+  chasesFolder: "SEC Chases"
+};
+
+async function ensureChaseLists() {
+  const worldUserIsGM = game.user?.isGM;
+  if (!worldUserIsGM) return; // Only GMs seed content
+
+  let chaseFolder = game.folders?.getName?.(SEC_CHASE.folderName) || game.folders?.find?.(f => f.type === "JournalEntry" && f.name === SEC_CHASE.folderName);
+  if (!chaseFolder) {
+    chaseFolder = await Folder.create({ name: SEC_CHASE.folderName, type: "JournalEntry" });
+  }
+
+  // Obstacles
+  let obstaclesJE = game.journal.getName?.(SEC_CHASE.obstaclesJournal) || game.journal.find?.(j => j.name === SEC_CHASE.obstaclesJournal);
+  if (!obstaclesJE) {
+    const obstacles = getDefaultObstacles();
+    const content = renderObstacleListContent(obstacles);
+    obstaclesJE = await JournalEntry.create({
+      name: SEC_CHASE.obstaclesJournal,
+      folder: chaseFolder?.id,
+      pages: [{ name: "Obstacles", type: "text", text: { content, format: 1 } }],
+      flags: { "sfrpg-easy-crew": { obstacles } }
+    });
+  }
+
+  // Environmental Effects
+  let effectsJE = game.journal.getName?.(SEC_CHASE.effectsJournal) || game.journal.find?.(j => j.name === SEC_CHASE.effectsJournal);
+  if (!effectsJE) {
+    const effects = getDefaultEffects();
+    const content = renderEffectsListContent(effects);
+    effectsJE = await JournalEntry.create({
+      name: SEC_CHASE.effectsJournal,
+      folder: chaseFolder?.id,
+      pages: [{ name: "Effects", type: "text", text: { content, format: 1 } }],
+      flags: { "sfrpg-easy-crew": { effects } }
+    });
+  }
+}
+
+function getDefaultObstacles() {
+  return [
+    { name: "Arcane Warp", roles: ["Magic Officer"], failure: "Next chase action check takes –2." },
+    { name: "Debris Cloud", roles: ["Gunner", "Pilot"], failure: "Take 1 hit." },
+    { name: "Electromagnetic Interference", roles: ["Engineer", "Science Officer"], failure: "Next Engineer or Science Officer check –2." },
+    { name: "Emplacement", roles: ["Engineer", "Gunner", "Pilot", "Science Officer"], failure: "Take 1 hit." },
+    { name: "Energy Spike", roles: ["Chief Mate", "Engineer"], failure: "Take 1 hit." },
+    { name: "False Alarm", roles: ["Captain", "Chief Mate"], failure: "Next chase action check –1." },
+    { name: "Geyser", roles: ["Pilot", "Science Officer"], failure: "Take 1 hit." },
+    { name: "Hangers On", roles: ["Chief Mate", "Engineer"], failure: "Next Piloting check –2." },
+    { name: "Local Intervention", roles: ["Captain"], failure: "Next chase action check –2." },
+    { name: "Magical Anomaly", roles: ["Magic Officer"], failure: "Next Magic Officer check –2." },
+    { name: "Misdirection", roles: ["Captain"], failure: "Next chase action check –2." },
+    { name: "Narrow Pass", roles: ["Gunner", "Pilot"], failure: "Take 1 hit." },
+    { name: "Offensive Spell", roles: ["Magic Officer"], failure: "Next chase action check –2." },
+    { name: "Rogue Meteoroid", roles: ["Gunner", "Magic Officer", "Pilot"], failure: "Take 1 hit." },
+    { name: "Stall", roles: ["Chief Mate", "Engineer"], failure: "Next Piloting check –2." },
+    { name: "Turbulence", roles: ["Pilot"], failure: "Next Chief Mate, Gunner, or Magic Officer check –2." }
+  ];
+}
+
+function getDefaultEffects() {
+  return [
+    { name: "Amateur Opponent", effect: "Evaluate Weakness grants 3 successes instead of 2." },
+    { name: "Cloud Cover", effect: "Failing Environmental Cover does not cause a hit." },
+    { name: "Incorporeal Opponent", effect: "Create Obstacle and Environmental Cover DCs +5." },
+    { name: "Innocent Bystanders", effect: "Negotiate Obstruction DC +5." },
+    { name: "Magic-Dampening Field", effect: "Magic Officer checks DC +5." },
+    { name: "Post-Combat Chase", effect: "Chase starts at half hit threshold (rounded down)." },
+    { name: "Sabotaged Engine", effect: "Failing Outspeed results in 1 hit." },
+    { name: "Seasoned Bounty Hunter", effect: "Outmaneuver DC +5." },
+    { name: "Swarming Ships", effect: "Covering Fire DC +5." },
+    { name: "Volatile Atmosphere", effect: "Taking Covering Fire causes 1 hit to firing ship." }
+  ];
+}
+
+function renderObstacleListContent(list) {
+  const items = list.map(o => `<li><b>${o.name}</b> — Roles: ${o.roles.join(", ")}. Failure: ${o.failure}</li>`).join("");
+  return `<h2>Starship Chase Obstacles</h2><p>Edit via Scene Config tab or update this journal's flags.</p><ul>${items}</ul>`;
+}
+
+function renderEffectsListContent(list) {
+  const items = list.map(e => `<li><b>${e.name}</b> — ${e.effect}</li>`).join("");
+  return `<h2>Environmental Effects</h2><p>Select effects in Scene Config before generating a chase.</p><ul>${items}</ul>`;
+}
+
+function readObstaclesFromJournal() {
+  const je = game.journal.getName?.(SEC_CHASE.obstaclesJournal) || game.journal.find?.(j => j.name === SEC_CHASE.obstaclesJournal);
+  const fallback = getDefaultObstacles();
+  const fromFlags = je?.flags?.["sfrpg-easy-crew"]?.obstacles;
+  if (Array.isArray(fromFlags) && fromFlags.length) return fromFlags;
+  return fallback;
+}
+
+function readEffectsFromJournal() {
+  const je = game.journal.getName?.(SEC_CHASE.effectsJournal) || game.journal.find?.(j => j.name === SEC_CHASE.effectsJournal);
+  const fallback = getDefaultEffects();
+  const fromFlags = je?.flags?.["sfrpg-easy-crew"]?.effects;
+  if (Array.isArray(fromFlags) && fromFlags.length) return fromFlags;
+  return fallback;
+}
+
+function injectChaseTab(app, html) {
+  try {
+    const nav = html.find(".sheet-tabs").first();
+    const body = html.find(".tab[data-tab]").last().parent();
+    if (!nav.length || !body.length) return;
+
+    // Add tab header
+    const tabId = "sec-chase";
+    if (!nav.find(`[data-tab="${tabId}"]`).length) {
+      nav.append(`<a class="item" data-tab="${tabId}"><i class="fas fa-rocket"></i> Starship Chase</a>`);
+    }
+
+    // Build tab content
+    const obstacles = readObstaclesFromJournal();
+    const effects = readEffectsFromJournal();
+
+    const effectsOptions = effects.map(e => `<option value="${e.name}">${e.name}</option>`).join("");
+    const obstaclesRows = obstacles.map((o, i) => `
+      <tr>
+        <td><input type="text" value="${o.name}" data-idx="${i}" class="sec-ob-name"/></td>
+        <td><input type="text" value="${o.roles.join(', ')}" data-idx="${i}" class="sec-ob-roles"/></td>
+        <td><input type="text" value="${o.failure}" data-idx="${i}" class="sec-ob-failure"/></td>
+        <td><button type="button" class="sec-ob-remove" data-idx="${i}">Remove</button></td>
+      </tr>`).join("");
+    const effectsRows = effects.map((e, i) => `
+      <tr>
+        <td><input type="text" value="${e.name}" data-idx="${i}" class="sec-ef-name"/></td>
+        <td><input type="text" value="${e.effect}" data-idx="${i}" class="sec-ef-effect"/></td>
+        <td><button type="button" class="sec-ef-remove" data-idx="${i}">Remove</button></td>
+      </tr>`).join("");
+    const content = `
+    <div class="tab" data-tab="${tabId}">
+      <div class="form-group">
+        <label>Average Party Level (APL)</label>
+        <input type="number" name="sec-apl" value="${Math.max(1, Math.min(20, game.settings.get("core", "levels") || 5))}" min="1" max="20"/>
+      </div>
+      <div class="form-group">
+        <label>Chase Length (rounds)</label>
+        <input type="number" name="sec-length" value="4" min="1" max="12"/>
+      </div>
+      <div class="form-group">
+        <label>Environmental Effects</label>
+        <select name="sec-effects" multiple size="5">${effectsOptions}</select>
+      </div>
+      <p>Obstacle pool: ${obstacles.length} entries (editable below or via journal "${SEC_CHASE.obstaclesJournal}").</p>
+      <button type="button" class="sec-generate-chase">Generate Starship Chase Journal</button>
+
+      <hr/>
+      <details>
+        <summary><b>Manage Lists</b> (GM only)</summary>
+        <div style="margin-top:6px;">
+          <h3>Obstacles</h3>
+          <table class="sec-table" style="width:100%;">
+            <thead><tr><th>Name</th><th>Roles (comma-separated)</th><th>Failure</th><th></th></tr></thead>
+            <tbody class="sec-ob-tbody">${obstaclesRows}</tbody>
+          </table>
+          <button type="button" class="sec-ob-add">Add Obstacle</button>
+        </div>
+        <div style="margin-top:10px;">
+          <h3>Environmental Effects</h3>
+          <table class="sec-table" style="width:100%;">
+            <thead><tr><th>Name</th><th>Effect</th><th></th></tr></thead>
+            <tbody class="sec-ef-tbody">${effectsRows}</tbody>
+          </table>
+          <button type="button" class="sec-ef-add">Add Effect</button>
+        </div>
+        <div style="margin-top:10px;">
+          <button type="button" class="sec-save-lists">Save Lists to Journals</button>
+        </div>
+      </details>
+    </div>`;
+
+    // Append once
+    if (!body.find(`.tab[data-tab='${tabId}']`).length) body.append(content);
+
+    // Rebind tabs so the new tab is clickable
+    try { app._tabs?.forEach(t => t.bind(html[0])); } catch (e) { /* ignore */ }
+
+    // Activate tab events
+    const root = body.find(`.tab[data-tab='${tabId}']`);
+    root.find(".sec-generate-chase").on("click", async () => {
+      const apl = Number(root.find("input[name='sec-apl']").val()) || 1;
+      const length = Number(root.find("input[name='sec-length']").val()) || 4;
+      const selected = Array.from(root.find("select[name='sec-effects']")[0].selectedOptions).map(o => o.value);
+      const selectedEffects = readEffectsFromJournal().filter(e => selected.includes(e.name));
+      await generateChaseJournal(app.document, apl, length, selectedEffects);
+    });
+
+    // List management (GM only)
+    if (game.user?.isGM) {
+      root.on("click", ".sec-ob-add", () => {
+        const tbody = root.find(".sec-ob-tbody");
+        const i = tbody.find("tr").length;
+        tbody.append(`<tr>
+          <td><input type="text" value="New Obstacle" data-idx="${i}" class="sec-ob-name"/></td>
+          <td><input type="text" value="Pilot" data-idx="${i}" class="sec-ob-roles"/></td>
+          <td><input type="text" value="Failure text" data-idx="${i}" class="sec-ob-failure"/></td>
+          <td><button type="button" class="sec-ob-remove" data-idx="${i}">Remove</button></td>
+        </tr>`);
+      });
+      root.on("click", ".sec-ef-add", () => {
+        const tbody = root.find(".sec-ef-tbody");
+        const i = tbody.find("tr").length;
+        tbody.append(`<tr>
+          <td><input type="text" value="New Effect" data-idx="${i}" class="sec-ef-name"/></td>
+          <td><input type="text" value="Effect text" data-idx="${i}" class="sec-ef-effect"/></td>
+          <td><button type="button" class="sec-ef-remove" data-idx="${i}">Remove</button></td>
+        </tr>`);
+      });
+      root.on("click", ".sec-ob-remove", (ev) => {
+        $(ev.currentTarget).closest("tr").remove();
+      });
+      root.on("click", ".sec-ef-remove", (ev) => {
+        $(ev.currentTarget).closest("tr").remove();
+      });
+      root.on("click", ".sec-save-lists", async () => {
+        const obs = [];
+        root.find(".sec-ob-tbody tr").each((_, tr) => {
+          const row = $(tr);
+          const name = row.find(".sec-ob-name").val();
+          const roles = String(row.find(".sec-ob-roles").val() || "").split(",").map(s => s.trim()).filter(Boolean);
+          const failure = row.find(".sec-ob-failure").val();
+          if (name) obs.push({ name, roles, failure });
+        });
+        const efs = [];
+        root.find(".sec-ef-tbody tr").each((_, tr) => {
+          const row = $(tr);
+          const name = row.find(".sec-ef-name").val();
+          const effect = row.find(".sec-ef-effect").val();
+          if (name) efs.push({ name, effect });
+        });
+        await saveChaseListsToJournals(obs, efs);
+        ui.notifications.info("Starship Chase lists saved.");
+      });
+    }
+  } catch (e) {
+    console.warn("SEC Chase: injectChaseTab failed", e);
+  }
+}
+
+function dcForAPL(apl) {
+  const table = {
+    1: { avg: 11, hard: 16 }, 2: { avg: 13, hard: 18 }, 3: { avg: 14, hard: 19 }, 4: { avg: 16, hard: 21 },
+    5: { avg: 17, hard: 22 }, 6: { avg: 19, hard: 24 }, 7: { avg: 20, hard: 25 }, 8: { avg: 22, hard: 27 },
+    9: { avg: 23, hard: 28 }, 10: { avg: 25, hard: 30 }, 11: { avg: 26, hard: 31 }, 12: { avg: 28, hard: 33 },
+    13: { avg: 29, hard: 34 }, 14: { avg: 31, hard: 36 }, 15: { avg: 32, hard: 37 }, 16: { avg: 34, hard: 39 },
+    17: { avg: 35, hard: 40 }, 18: { avg: 37, hard: 42 }, 19: { avg: 38, hard: 43 }, 20: { avg: 40, hard: 45 }
+  };
+  const key = Math.max(1, Math.min(20, Math.round(apl)));
+  return table[key];
+}
+
+async function generateChaseJournal(scene, apl, length, selectedEffects) {
+  const obstacles = [...readObstaclesFromJournal()];
+  const effects = selectedEffects || [];
+  const dc = dcForAPL(apl);
+  const actions = selectChaseActions(length);
+
+  // Select obstacles for rounds (avoid repeats until exhausted)
+  const rounds = [];
+  let pool = [...obstacles];
+  for (let i = 0; i < length; i++) {
+    if (pool.length === 0) pool = [...obstacles];
+    const idx = Math.floor(Math.random() * pool.length);
+    const ob = pool.splice(idx, 1)[0];
+    rounds.push({ round: i + 1, obstacle: ob });
+  }
+
+  const effectLines = effects.map(e => `<li><b>${e.name}</b>: ${e.effect}</li>`).join("") || "<li>None</li>";
+  const roundsHtml = rounds.map((r, i) => {
+    const label = `Round ${r.round} — ${r.obstacle.name}`;
+    const roles = r.obstacle.roles.join(", ");
+    const failure = r.obstacle.failure;
+    const action = actions[i];
+    const obDC = computeObstacleDC(dc, r.obstacle, effects);
+    const actDC = computeActionDC(dc, action.name, effects);
+    const effectNotes = computePerActionNotes(action.name, effects);
+    return `
+    <section style="border:1px solid var(--color-border); padding:6px; margin:6px 0;">
+      <h3>${label}</h3>
+      <p><b>Roles:</b> ${roles}</p>
+      <p><b>On Failure:</b> ${failure}</p>
+      <p><b>Chase Action:</b> ${action.name}${action.note ? ` — ${action.note}` : ''}</p>
+      <div>
+        <button type="button" class="sec-chase-roll" data-kind="obstacle" data-round="${r.round}" data-dc="${obDC.avg}" data-label="${r.obstacle.name} (Obstacle)">Roll Obstacle (Avg DC ${obDC.avg}${obDC.adj ? `, ${obDC.adj}` : ''})</button>
+        <button type="button" class="sec-chase-roll" data-kind="obstacle-hard" data-round="${r.round}" data-dc="${obDC.hard}" data-label="${r.obstacle.name} (Obstacle Hard)">Roll Obstacle (Hard DC ${obDC.hard}${obDC.adj ? `, ${obDC.adj}` : ''})</button>
+      </div>
+      <div style="margin-top:4px;">
+        <button type="button" class="sec-chase-roll" data-kind="action" data-round="${r.round}" data-dc="${actDC.avg}" data-label="${action.name}">Roll ${action.name} (Avg DC ${actDC.avg}${actDC.adj ? `, ${actDC.adj}` : ''})</button>
+        <button type="button" class="sec-chase-roll" data-kind="action-hard" data-round="${r.round}" data-dc="${actDC.hard}" data-label="${action.name} (Hard)">Roll ${action.name} (Hard DC ${actDC.hard}${actDC.adj ? `, ${actDC.adj}` : ''})</button>
+      </div>
+      ${effectNotes ? `<div style="margin-top:4px; font-size:0.9em; color: var(--color-text-light-6);"><i class="fas fa-info-circle"></i> ${effectNotes}</div>` : ''}
+    </section>`;
+  }).join("");
+
+  const header = `
+  <h1>Starship Chase</h1>
+  <p><b>Scene:</b> ${scene.name} | <b>APL:</b> ${apl} | <b>Length:</b> ${length} rounds</p>
+  <h2>Environmental Effects</h2>
+  <ul>${effectLines}</ul>
+  <button type="button" class="sec-chase-outcome">Outcome Helper</button>
+  <hr/>`;
+
+  const content = header + roundsHtml;
+
+  // Ensure destination folder exists
+  let destFolder = game.folders?.getName?.(SEC_CHASE.chasesFolder) || game.folders?.find?.(f => f.type === "JournalEntry" && f.name === SEC_CHASE.chasesFolder);
+  if (!destFolder) destFolder = await Folder.create({ name: SEC_CHASE.chasesFolder, type: "JournalEntry" });
+
+  const name = `Starship Chase - ${scene.name} - ${new Date().toLocaleString()}`;
+  const je = await JournalEntry.create({ name, folder: destFolder?.id, pages: [{ name: "Chase", type: "text", text: { content, format: 1 } }], flags: { "sfrpg-easy-crew": { apl, length, effects } } });
+  await je?.sheet?.render(true);
+  ui.notifications.info(`Created Starship Chase journal: ${name}`);
+}
+
+async function onChaseRollClick(event) {
+  event.preventDefault();
+  const btn = event.currentTarget;
+  const dc = Number(btn.dataset.dc) || 0;
+  const label = btn.dataset.label || "Chase Check";
+  const kind = btn.dataset.kind || "check";
+
+  const content = `<div class="form-group"><label>Modifier</label><input type="number" name="mod" value="0"/></div>`;
+  new Dialog({
+    title: `${label} — DC ${dc}`,
+    content,
+    buttons: {
+      roll: {
+        icon: '<i class="fas fa-dice-d20"></i>',
+        label: "Roll",
+        callback: async (html) => {
+          const mod = Number(html.find("input[name='mod']").val()) || 0;
+          const r = await (new Roll("1d20 + @mod", { mod })).evaluate({ async: true });
+          const flavor = `${label} — ${kind.toUpperCase()} vs DC ${dc}`;
+          r.toMessage({ speaker: ChatMessage.getSpeaker(), flavor });
+        }
+      },
+      cancel: { label: "Cancel" }
+    },
+    default: "roll"
+  }).render(true);
+}
+
+async function onChaseOutcomeClick(event) {
+  event.preventDefault();
+  const content = `
+    <div class="form-group"><label>Length (rounds)</label><input type="number" name="len" value="6" min="1"/></div>
+    <div class="form-group"><label>Successes</label><input type="number" name="succ" value="0" min="0"/></div>`;
+  new Dialog({
+    title: "Starship Chase Outcome",
+    content,
+    buttons: {
+      show: {
+        icon: '<i class="fas fa-flag-checkered"></i>',
+        label: "Show Outcome",
+        callback: (html) => {
+          const len = Number(html.find("input[name='len']").val()) || 6;
+          const succ = Number(html.find("input[name='succ']").val()) || 0;
+          const outcome = outcomeForSuccesses(succ, len);
+          const flavor = `Chase Outcome — Successes: ${succ}/${len}`;
+          const msg = `<div><b>Outcome:</b> ${outcome.result}</div>
+                       <div><b>SP Lost:</b> ${outcome.sp}</div>
+                       <div><b>HP Lost:</b> ${outcome.hp}</div>
+                       <div><b>Wrecked Systems:</b> ${outcome.systems}</div>`;
+          ChatMessage.create({ content: msg, speaker: ChatMessage.getSpeaker(), flavor });
+        }
+      },
+      cancel: { label: "Cancel" }
+    },
+    default: "show"
+  }).render(true);
+}
+
+function outcomeForSuccesses(succ, len) {
+  // Baseline is Table 2–3 for 6 rounds; scale thresholds linearly to chosen length
+  const ratio = len > 0 ? succ / len : 0;
+  // 5+ = Success (perfect), 4 = Success (minor losses), 3 = Failure (moderate), <=2 = Failure (severe)
+  let result = "Failure"; let sp = "100%"; let hp = "100%"; let systems = 5;
+  if (ratio >= 5 / 6) { result = "Success"; sp = "0%"; hp = 0; systems = 0; }
+  else if (ratio >= 4 / 6) { result = "Success"; sp = "10%"; hp = "10%"; systems = 1; }
+  else if (ratio >= 3 / 6) { result = "Failure"; sp = "50%"; hp = "50%"; systems = 2; }
+  return { result, sp, hp, systems };
+}
+
+const CHASE_ACTIONS = [
+  { name: "Covering Fire", note: "+1 success on success." },
+  { name: "Create Obstacle", note: "+1 success on success." },
+  { name: "Environmental Cover", note: "+1 success on success; Fail by 5+: 1 hit." },
+  { name: "Evaluate Weakness", note: "Next action +2; if 1 success, becomes 2; once per chase." },
+  { name: "Negotiate Obstruction", note: "+1 success on success; Fail by 5+: 1 hit." },
+  { name: "Outmaneuver", note: "If next action would be 1 success, becomes 2; Fail by 5+: 1 hit." },
+  { name: "Outspeed", note: "+1 success on success; Fail by 5+: cannot be selected again." }
+];
+
+function selectChaseActions(length) {
+  const actions = [];
+  let last = null;
+  let usedEval = false;
+  for (let i = 0; i < length; i++) {
+    const pool = CHASE_ACTIONS.filter(a => a.name !== last && (a.name !== "Evaluate Weakness" || !usedEval));
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    actions.push(pick);
+    last = pick.name;
+    if (pick.name === "Evaluate Weakness") usedEval = true;
+  }
+  return actions;
+}
+
+async function saveChaseListsToJournals(obstacles, effects) {
+  let chaseFolder = game.folders?.find?.(f => f.type === "JournalEntry" && f.name === SEC_CHASE.folderName);
+  if (!chaseFolder) chaseFolder = await Folder.create({ name: SEC_CHASE.folderName, type: "JournalEntry" });
+
+  // Obstacles
+  let obstaclesJE = game.journal.find?.(j => j.name === SEC_CHASE.obstaclesJournal);
+  if (!obstaclesJE) {
+    obstaclesJE = await JournalEntry.create({ name: SEC_CHASE.obstaclesJournal, folder: chaseFolder?.id });
+  }
+  const obContent = renderObstacleListContent(obstacles);
+  await obstaclesJE.update({ flags: { "sfrpg-easy-crew": { obstacles } } });
+  const obPage = obstaclesJE.pages?.[0];
+  if (obPage) await obstaclesJE.update({ [`pages.${obstaclesJE.pages.findIndex(p => p.id === obPage.id)}.text.content`]: obContent });
+  else await obstaclesJE.createEmbeddedDocuments("JournalEntryPage", [{ name: "Obstacles", type: "text", text: { content: obContent, format: 1 } }]);
+
+  // Effects
+  let effectsJE = game.journal.find?.(j => j.name === SEC_CHASE.effectsJournal);
+  if (!effectsJE) {
+    effectsJE = await JournalEntry.create({ name: SEC_CHASE.effectsJournal, folder: chaseFolder?.id });
+  }
+  const efContent = renderEffectsListContent(effects);
+  await effectsJE.update({ flags: { "sfrpg-easy-crew": { effects } } });
+  const efPage = effectsJE.pages?.[0];
+  if (efPage) await effectsJE.update({ [`pages.${effectsJE.pages.findIndex(p => p.id === efPage.id)}.text.content`]: efContent });
+  else await effectsJE.createEmbeddedDocuments("JournalEntryPage", [{ name: "Effects", type: "text", text: { content: efContent, format: 1 } }]);
+}
 
 async function onDivertPower(event) {
   // console.log("Divert Power clicked:", event);
@@ -272,6 +725,7 @@ async function findNewActorPicture(actor) {
 async function setAttacks(event) {
   // console.log("Set NPC Attacks clicked");
 
+
   var actor
   const button = $(event.currentTarget);
   const actorId = button.data("id");
@@ -299,6 +753,41 @@ async function setAttacks(event) {
   }
   if (!actor.system.details.combatRole) { ui.notifications.warn("Set NPC Combat role."); return; }
   const actorCR = convertCR(actor.system.details.cr);
+
+
+
+
+  
+  // Ensure actor has the correct "Weapon Specialisation (NPC)" from sec_items
+  async function ensureNpcWeaponSpecialisation(actor) {
+    const itemName = "Weapon Specialization (NPC)";
+    try {
+      const pack = game.packs.get("sfrpg-easy-crew.sec_items");
+      if (!pack) {
+        console.warn("Compendium sfrpg-easy-crew.sec_items not found");
+        return;
+      }
+      const index = await pack.getIndex();
+      const entry = index.find(e => e.name === itemName);
+      if (!entry) {
+        console.warn(`${itemName} not found in sfrpg-easy-crew.sec_items`);
+        return;
+      }
+      const doc = await pack.getDocument(entry._id ?? entry.id);
+      const newItemData = doc.toObject();
+
+      const existing = actor.items.filter(i => i.name === itemName);
+      if (existing.length) {
+        await actor.deleteEmbeddedDocuments("Item", existing.map(i => i.id));
+      }
+      console.log(`Adding ${itemName} to actor ${actor.name}`);
+      await actor.createEmbeddedDocuments("Item", [newItemData]);
+    } catch (err) {
+      console.error("ensureNpcWeaponSpecialisation error:", err);
+    }
+  }
+
+  await ensureNpcWeaponSpecialisation(actor);
 
   // console.log("Actor:", actor);
   const packs = game.packs.filter(p => {
@@ -412,9 +901,9 @@ async function setAttacks(event) {
 
   upgradeItems.forEach((item, index) => {
     item.img = item.img.includes("icons/default/") ? findNewPicture(item) : item.img;
-
+console.log("------------Processing Item:", item.name, item);
     const okLevel = (((item.system.level - 2) < actor.system.details.cr) && ((item.system.level + 4) > actor.system.details.cr))
-    const existingCompendiumItem = item._source._stats.compendiumSource
+    const existingCompendiumItem = item._source._stats.compendiumSource?.includes("Compendium.") ? item._source._stats.compendiumSource : null;
     const isMultiAttack = multiAttackNames.some(tag => item.name.toLowerCase().includes(tag))
     const multiAttack = 6 * (isMultiAttack ? 1 : 0);
 
@@ -423,7 +912,7 @@ async function setAttacks(event) {
     const attackStat = SEC.NPCAttackStats[actor.system.details.combatRole][actorCR];
     const meleeW = ["advancedM", "basicM"].includes(item.system.weaponType)
     const meleeA = ["mwak", "msak"].includes(item.system.actionType)
-    checkCompendium(actor, item, meleeW ? meleecompendiumweapons : rangedcompendiumweapons).then((returnData) => {
+    checkCompendium(actor, item, meleeW ? meleecompendiumweapons : rangedcompendiumweapons).then(async (returnData) => {
 
       console.log("Check Compendium Result:", returnData);
 
@@ -494,25 +983,24 @@ async function setAttacks(event) {
        * 
        */
       if (existingCompendiumItem || exactMatch) {
-        const sourceItem = exact ///existingCompendiumItem ? fromUuid(existingCompendiumItem) : exact;
-        // if (sourceItem) {
-        const newItem = foundry.utils.duplicate(sourceItem);
+
+        const sourceItem = existingCompendiumItem ? await fromUuid(existingCompendiumItem) : exact;
+        console.log("Found Exact Compendium Item for:", item.name, sourceItem, existingCompendiumItem);
+        const newItem = await foundry.utils.duplicate(sourceItem);
+        console.log("Duplicated Item:", newItem);
         newItem.system.attackBonus = attackBonus;
         newItem.system.ability = "";
         newItem.system.equipped = true;
-
         newItem.img = item.img;
         newItem.system.proficient = true;
         newItem.system.damage.parts.forEach((part, index) => {
-          let specialisationDamage = true
-         // newItem.system.properties.explode ? specialisationDamage = false : specialisationDamage;
-        //  newItem.system.properties.blast ? specialisationDamage = false : specialisationDamage;
-        //  newItem.system.properties.line ? specialisationDamage = false : specialisationDamage;
-          newItem.system.weaponType === "grenade" ? specialisationDamage = false : specialisationDamage;
-          
-          if (specialisationDamage) {
-            part.formula += actor.system.details.cr < 1 ? "" : " + " + `${actor.system.details.cr}`;
-          }
+
+
+            if (!part || typeof part.formula !== "string") return;
+            // Strip flat numeric bonuses like "+ 5" from the formula (e.g., "2d10 + 5" -> "2d10").
+            part.formula = part.formula.replace(/\s*\+\s*[-+]?\d+(?:\.\d+)?/g, "").trim();
+
+
           // console.log("Damage Part:", part, (" + " + `${actor.system.details.cr}`));
         });
         const version = game.modules.get("sfrpg-easy-crew")?.version || "1.0.0";
@@ -1106,4 +1594,52 @@ async function setNPCSkills(actor) {
    * 
    */
 
+}
+
+// ---------- DC adjustments and helpers ----------
+
+const ACTION_ROLES = {
+  "Covering Fire": ["Gunner"],
+  "Create Obstacle": ["Chief Mate", "Engineer", "Magic Officer", "Science Officer"],
+  "Environmental Cover": ["Pilot"],
+  "Evaluate Weakness": ["Captain", "Science Officer"],
+  "Negotiate Obstruction": ["Gunner", "Science Officer"],
+  "Outmaneuver": ["Pilot"],
+  "Outspeed": ["Chief Mate", "Engineer", "Magic Officer"]
+};
+
+function computeActionDC(base, actionName, effects) {
+  let avg = base.avg; let hard = base.hard; const reasons = [];
+  const names = new Set((effects || []).map(e => e.name));
+  const roles = ACTION_ROLES[actionName] || [];
+
+  const add = (n, why) => { avg += n; hard += n; reasons.push(`${n > 0 ? '+' : ''}${n} ${why}`); };
+
+  if (names.has("Incorporeal Opponent") && ["Create Obstacle", "Environmental Cover"].includes(actionName)) add(5, "Incorporeal");
+  if (names.has("Innocent Bystanders") && actionName === "Negotiate Obstruction") add(5, "Bystanders");
+  if (names.has("Seasoned Bounty Hunter") && actionName === "Outmaneuver") add(5, "Bounty Hunter");
+  if (names.has("Swarming Ships") && actionName === "Covering Fire") add(5, "Swarming Ships");
+  if (names.has("Magic-Dampening Field") && roles.includes("Magic Officer")) add(5, "Magic-Dampening");
+
+  return { avg, hard, adj: reasons.join(", ") };
+}
+
+function computeObstacleDC(base, obstacle, effects) {
+  let avg = base.avg; let hard = base.hard; const reasons = [];
+  const names = new Set((effects || []).map(e => e.name));
+  if (names.has("Magic-Dampening Field") && (obstacle.roles || []).includes("Magic Officer")) {
+    avg += 5; hard += 5; reasons.push("+5 Magic-Dampening");
+  }
+  return { avg, hard, adj: reasons.join(", ") };
+}
+
+function computePerActionNotes(actionName, effects) {
+  const names = new Set((effects || []).map(e => e.name));
+  const notes = [];
+  if (names.has("Cloud Cover") && actionName === "Environmental Cover") notes.push("Failing Environmental Cover does not cause a hit.");
+  if (names.has("Volatile Atmosphere") && actionName === "Covering Fire") notes.push("Taking Covering Fire causes 1 hit to the firing ship.");
+  if (names.has("Sabotaged Engine") && actionName === "Outspeed") notes.push("Failing Outspeed results in 1 hit.");
+  if (names.has("Amateur Opponent") && actionName === "Evaluate Weakness") notes.push("Evaluate Weakness: next action yields 3 successes instead of 2.");
+  if (notes.length) return notes.join(" ");
+  return "";
 }
