@@ -1395,17 +1395,14 @@ function onRepairShip(event) {
     system.value = 'nominal'
 
   }
-  actor.update({ "system.attributes.hp.value": actor.system.attributes.hp.max })
-  actor.update({ "system.attributes.systems": newSystems }) // Update the systems to nominal status
-  console.log("New Quadrants", newQuadrants, "New Systems", newSystems)
+ // actor.update({ "system.attributes.hp.value": actor.system.attributes.hp.max })
+ // actor.update({ "system.attributes.systems": newSystems }) // Update the systems to nominal status
+ // console.log("New Quadrants", newQuadrants, "New Systems", newSystems)
 
-  //actor.sheet.close() // Close the sheet before updating
-  actor.update({ "system.quadrants": newQuadrants }).then(() => {
-    // actor.update(hpToMax).then(() => {
+  actor.update({"system.attributes.hp.value": actor.system.attributes.hp.max ,"system.attributes.systems": newSystems, "system.quadrants": newQuadrants }).then(() => {
     actor.sheet.render(false); // Re-render the sheet to show the updated values 
     ui.notifications.info("Ship Repaired to Full HP", { permanent: true, localize: true });
-    // console.log("Ship Repaired")
-    // actor.sheet.render(true)
+
   }).catch(err => {
     console.error("Error repairing ship:", err);
     ui.notifications.error("Failed to repair ship.");
